@@ -69,13 +69,26 @@ Prices begin recovering from June onward, likely as stored supply depletes and b
 
 - Festive or seasonal demand — Cultural events may also influence temporary spikes.
 
+
+
+***Seasonal Rice Price Patterns and the Role of Boro Rice:***
+Rice prices in Bangladesh follow a seasonal cycle, shaped by three harvests: Aus, Aman, and Boro. Among them, Boro rice has the biggest impact on prices because it accounts for over half of national production.
+
+Boro is grown in the dry season (planted Dec–Jan, harvested Apr–May) using irrigation. When the Boro harvest arrives (April–May), rice floods the market, leading to a sharp drop in prices — especially in May.
+
+
+As stocks deplete over the following months, prices begin rising again, peaking in August (before Aman harvest) and again in February (before the next Boro harvest). These peaks reflect low supply and high demand during lean seasons.
+
+
+
+
 *** Summary:***
 This seasonal trend in rice pricing has real implications for rural livelihoods, household food security, and market interventions. Policymakers might consider price stabilization strategies or targeted support during high-price months, especially for vulnerable populations.
 
 
 
 
-We previously found a negative relationship between rice prices and poverty (using toilet access as a proxy). But how does that economic shift impact family structure, especially child dependency (number of children per working-age adult)?
+Now, how does the economic shift impact family structure, especially child dependency (number of children per working-age adult)?
 
 - This plot helps test whether higher rice prices (less poverty) are also linked with lower child dependency—and whether that trend differs in urban vs rural areas.
 
@@ -128,6 +141,15 @@ knitr::include_graphics("~/Desktop/ECNS_560_REDO/Plots/poverty_map_dhaka_rajshah
 
 *Figure: Poverty rates by upazila, with Rajshahi and Dhaka divisions highlighted*
 
+Color scale (bottom right):
+
+Yellow = lower poverty
+
+Purple = higher poverty
+
+Gray = missing or unmatched data
+
+
 
 Poverty in Dhaka Division
 The highlighted black-bordered area represents Dhaka Division, now visually distinct from the rest of the country.
@@ -136,13 +158,14 @@ Compared to other regions:
 
 Dhaka Division shows moderate-to-lower poverty rates, especially around urban/upazila centers near Dhaka city.
 
-Some surrounding upazilas in Dhaka Division still show intermediate levels of poverty (orange/purple hues), indicating urban-rural disparity within the division.
+Some surrounding upazilas in Dhaka Division still show intermediate levels of poverty (orange/purple hues), indicating urban-rural disparity within the division.Urban Dhaka and surrounding upazilas show better conditions than rural areas.
 
 Regional comparison:
 
-Southwest (Barisal) and parts of the northwest show higher poverty.
+Southwest (Barisal) and parts of the northwest show higher poverty (lots of purple).
 
 Central regions like Dhaka, and pockets of Chattogram and Sylhet, appear less impoverished overall.
+
 
 
 
@@ -226,6 +249,20 @@ knitr::include_graphics("~/Desktop/ECNS_560_REDO/Plots/child_dependency_bubble_p
 This bubble chart tells a more layered story about household vulnerability.
 
 This chart shows how child dependency (how many kids each adult is supporting) changes depending on rice prices and poverty levels (measured by access to toilets).
+
+
+In a Household Dataset (like IPUMS), you can approximate it as:
+Child Dependency Ratio = Number of Children/Number of Working-Age Adults
+ 
+- Where:
+
+Children = Household members aged 0–14
+
+Working-Age Adults = Members aged 15–64
+
+- consistent with international demographic standards (World Bank, 2023; United Nations Population Division).
+
+
 
 1. Urban areas have higher child dependency.
 Even though we often think rural families are bigger, in this case, urban families (the blue dots) are supporting more children per adult.
@@ -314,7 +351,7 @@ knitr::include_graphics("~/Desktop/ECNS_560_REDO/Plots/family_size_trend_rajshah
 
 This line graph tracks how average family size has changed over time in the Rajshahi Division — separately for urban and rural areas — across three census years: 1991, 2001, and 2011.
 
-*Interpretation:* Over the 20-year span from 1991 to 2011, average family size in Rajshahi decreased overall, hitting a low in 2001 before slightly rising by 2011. Rural families experienced a more dramatic drop, which may be linked to effective family planning initiatives and demographic shifts. Interestingly, urban family sizes remained larger throughout, possibly reflecting different living arrangements or economic migration patterns. This trend reflects how evolving socioeconomic conditions — such as education, migration, and resource constraints — have influenced household composition across time.
+*Interpretation:* Over the 20-year span from 1991 to 2011, average family size in Rajshahi decreased overall, hitting a low in 2001 before slightly rising by 2011. The sharp decline in the 1990s may reflect family planning, education, or economic changes. Interestingly, urban family sizes remained larger throughout, possibly reflecting different living arrangements or economic migration patterns. This trend reflects how evolving socioeconomic conditions — such as education, migration, and resource constraints — have influenced household composition across time.
 
 This shows:
 
@@ -332,6 +369,21 @@ knitr::include_graphics("~/Desktop/ECNS_560_REDO/Plots/child_dependency_over_tim
 ```
 
 I tried to create bar graphs here. But the line plot is more intuitive, since: It visually connects 1991 → 2001 → 2011, and clearly shows the direction of change over time for both urban and rural areas.According to the graph, 
+
+* Urban Areas (Teal):
+
+- Started high in 1991 (~0.177)
+
+- Peaked in 2001 (~0.181)
+
+- Dropped by 2011 (~0.175)
+
+* Rural Areas (Red):
+
+- Very stable from 1991 (~0.163) to 2001 (~0.164)
+- Then sharply declined by 2011 (~0.159)
+
+
 
 **rural areas:**
 - Very stable child dependency between 1991 and 2001, hovering around 0.164.
