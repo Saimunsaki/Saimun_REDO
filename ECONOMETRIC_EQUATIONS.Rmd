@@ -1,0 +1,338 @@
+---
+title: "ECONOMETRIC_EQUATIONS"
+output: html_document
+date: "2025-04-17"
+---
+### Regression Models: Child Dependency in Rajshahi
+Rising rice prices can force households to make difficult adjustments — such as increasing family size, pulling children from school, or shifting dependency patterns. These decisions reflect deeper economic pressures, especially among low-income or urban households.
+
+This model directly explores the structural and locational factors associated with child dependency:
+
+avg_famsize: Average household size — a key coping strategy when resources are stretched.
+
+urban_rural: Urban or rural status — captures differing economic pressures and support systems across locations.
+
+avg_child_dependency: The outcome of interest — measuring the average number of children per household.
+
+
+```{r setup}
+library(dplyr)
+library(readr)
+library(car)
+library(modelsummary)
+set.seed(123)
+```
+
+## Loading and combining IPUMS microdata
+```{r}
+
+ipums_2011 <- read_csv("IPUMS_2011.csv") %>%
+  sample_frac(0.10)
+
+
+```
+
+## Filtering to Rajshahi + creating microdata-level variables
+```{r}
+
+
+rajshahi_micro <- ipums_2011 %>%
+  mutate(
+    child_dependency = NCHILD,
+    famsize = PERSONS,
+    urban_rural = ifelse(URBAN == 1, "Urban", "Rural"),
+    YEAR = 2011
+  )
+
+```
+
+## Loading rice data
+```{r}
+
+library(dplyr)
+library(readr)
+library(lubridate)
+library(stringr)  
+
+rice_raw <- read_csv("Raw_Datasets/Rice_data.csv")
+
+# Filtering to Rajshahi, rice items, and 2011 only
+rice_rajshahi_2011 <- rice_raw %>%
+  filter(admin1 == "Rajshahi",
+       str_detect(commodity, regex("rice", ignore_case = TRUE)),
+       year(ymd(date)) == 2011)
+
+
+# To extract month and compute average monthly price
+monthly_rice_2011 <- rice_rajshahi_2011 %>%
+  mutate(MONTH = month(ymd(date))) %>%
+  group_by(MONTH) %>%
+  summarise(monthly_price = mean(price, na.rm = TRUE))
+
+print(monthly_rice_2011)
+
+
+```
+
+# Creating Monthly Rice Prices for 2011 in Rajshahi
+
+```{r}
+
+set.seed(123)  # for reproducibility
+
+# Adding a random month (1–12) to each household in 2011
+rajshahi_micro <- rajshahi_micro %>%
+  filter(YEAR == 2011) %>%
+  mutate(MONTH = sample(1:12, n(), replace = TRUE))
+
+```
+
+```{r}
+# To Join with monthly rice prices
+rajshahi_micro <- left_join(rajshahi_micro, monthly_rice_2011, by = "MONTH")
+
+```
+
+
+Model 1: Effect of Monthly Rice Price and Location on Child Dependency
+This baseline regression model explores the relationship between monthly rice prices and urban-rural location on the number of children in a household (child dependency) in Rajshahi, 2011. While rice prices do not show a significant effect, urban households consistently report higher child dependency, highlighting locational economic pressures.
+
+
+```{r}
+model_monthly <- lm(child_dependency ~ monthly_price + urban_rural, data = rajshahi_micro)
+summary(model_monthly)
+
+```
+
+$$
+\text{ChildDependency}_i = \beta_0 + \beta_1 \cdot \text{MonthlyPrice}_i + \beta_2 \cdot \text{UrbanDummy}_i + \varepsilon_i
+$$
+Where:
+
+$\text{ChildDependency}_i$ = Number of children in household i
+
+$\text{MonthlyPrice}_i$ = Average rice price in the household’s assigned month
+
+$\text{UrbanDummy}_i$ = 1 if Urban, 0 if Rural
+
+$\varepsilon_i$ = Error term capturing unobserved factors
+
+
+```{r}
+
+
+# Creating a formatted summary table for Model 1
+modelsummary(
+  model_monthly,
+  statistic = "std.error",  # Show standard errors
+  stars = TRUE,             # Add significance stars
+  gof_map = c("nobs", "r.squared", "adj.r.squared", "AIC"),
+  title = "Model 1: Monthly Rice Price & Urban/Rural Status on Child Dependency",
+  output = "markdown"       
+)
+
+```
+
+While monthly rice prices in Rajshahi were matched to household records based on randomized interview months (due to the lack of timestamped microdata), results suggest no statistically significant association between short-term price variation and child dependency. This may reflect limited household responsiveness to monthly price shifts, or the masking effect of data limitations.
+
+However, urban households consistently show higher child dependency, supporting prior findings.
+
+
+
+Now, we'll see if price effects differ between rural and urban households.
+```{r}
+
+# Model 2:
+# Interaction model: Price x Urban-Rural
+model_interaction <- lm(child_dependency ~ monthly_price * urban_rural, data = rajshahi_micro)
+summary(model_interaction)
+
+```
+$$
+\text{ChildDependency}_i = \beta_0 + \beta_1 \cdot \text{MonthlyPrice}_i + \beta_2 \cdot \text{UrbanDummy}_i + \beta_3 \cdot (\text{MonthlyPrice}_i \cdot \text{UrbanDummy}_i) + \varepsilon_i
+$$
+Where:
+
+$\text{ChildDependency}_i$ = Number of children in household i
+
+$\text{MonthlyPrice}_i$ = Monthly average rice price (assigned randomly due to lack of timestamp)
+
+$\text{UrbanDummy}_i$ = 1 if Urban, 0 if Rural
+
+$\text{MonthlyPrice}_i \cdot \text{UrbanDummy}_i$ = Interaction term capturing how price effects differ in urban vs. rural areas
+
+$\varepsilon_i$ = Error term
+
+
+```{r}
+# Creating a formatted summary table for Model 2
+modelsummary(
+  model_interaction,
+  statistic = "std.error",  # Display standard errors under estimates
+  stars = TRUE,             # Include significance stars
+  gof_map = c("nobs", "r.squared", "adj.r.squared", "AIC"),  # Add GOF stats
+  title = "Model 2: Interaction Between Monthly Rice Price and Urban-Rural Location on Child Dependency",
+  output = "markdown"     
+)
+
+```
+
+
+Interpretation of Model 1: Monthly Rice Price & Urban/Rural Status on Child Dependency
+Model 1 examines whether monthly rice prices and household location (urban vs. rural) are associated with the number of children in a household in Rajshahi, 2011.
+
+Intercept (0.760*):** This is the predicted number of children in a rural household (the reference group) when rice prices are zero. While a price of zero isn't realistic, this intercept provides a baseline for interpretation.
+
+Monthly Rice Price (0.001): The coefficient for rice price is positive but not statistically significant, indicating that rice price fluctuations are not meaningfully associated with the number of children in a household. This suggests that short-term changes in food prices may not directly influence household structure decisions.
+
+Urban Household (0.108*):** Urban households have, on average, 0.108 more children than rural ones, a result that is highly statistically significant (p < 0.001). This finding suggests that urban families may experience greater child dependency, potentially due to economic stressors like higher costs of living or weaker informal safety nets.
+
+Model Fit (R² = 0.001): The model explains just 0.1% of the variation in child dependency, which is expected in large household datasets with many unmeasured variables. Despite the low R², the model is statistically significant overall.
+
+✅ Summary
+Model 1 shows that urban households exhibit higher child dependency than rural households, even after accounting for rice prices. However, monthly rice price alone does not significantly influence the number of children per household. This highlights that structural location-based differences may be more important than food price variation when it comes to child dependency in this context.
+
+
+
+# This model was important to explore. Even when results are weak or insignificant, they tell a story — in this case, that structural factors like location matter more than short-term price shifts.
+
+
+
+
+# Model 3: Adding Family Size (Famsize) to the Model
+This model was designed to explore whether the effect of rice price on child dependency differs by location — specifically, between urban and rural households. By including an interaction term between price and urban status, we can test if urban families respond differently to food price changes compared to rural ones. This is important because urban households are net consumers, while rural households may benefit from price increases as producers.
+
+
+```{r}
+# Model 3: with famsize added
+model_with_famsize <- lm(child_dependency ~ monthly_price + urban_rural + famsize, data = rajshahi_micro)
+summary(model_with_famsize)
+
+```
+
+Econometric Notation (Adding Family Size)
+$$
+\text{ChildDependency}_i = \beta_0 + \beta_1 \cdot \text{MonthlyPrice}_i + \beta_2 \cdot \text{Urban}_i + \beta_3 \cdot \text{FamilySize}_i + \varepsilon_i
+$$
+Where:
+
+- \( \text{ChildDependency}_i \): Number of children in household \( i \)  
+- \( \text{MonthlyPrice}_i \): Average rice price in the assigned month for household \( i \)  
+- \( \text{Urban}_i \): Urban dummy; 1 = Urban, 0 = Rural  
+- \( \text{FamilySize}_i \): Number of persons in household \( i \)  
+- \( \varepsilon_i \): Error term
+
+
+
+```{r}
+
+# Create a nicely formatted summary table for Model 3
+modelsummary(
+  model_with_famsize,
+  statistic = "std.error",  # Display standard errors below estimates
+  stars = TRUE,             # Add significance stars
+  gof_map = c("nobs", "r.squared", "adj.r.squared", "AIC"),  # Goodness-of-fit metrics
+  title = "Model 3: Effect of Monthly Rice Price, Urban-Rural Location, and Family Size on Child Dependency",
+  output = "markdown"       
+)
+
+```
+Interpretation:
+
+The intercept (0.713) reflects the expected number of children in a rural household when the rice price is zero (a theoretical baseline).
+
+The main effect of rice price (0.002) is not statistically significant, suggesting that rice price alone does not influence child dependency among rural households.
+
+The urban_ruralUrban coefficient (0.168) is marginally significant (p < 0.1), indicating that urban households tend to have slightly more children than rural ones, though the result is not robust.
+
+The interaction term (-0.002) shows how the effect of price changes for urban households compared to rural ones — but it is not statistically significant, meaning price sensitivity does not differ meaningfully by location.
+
+Summary:
+Despite expectations that rising food prices might hit urban households harder (due to their consumer role), the model finds no strong evidence of that effect. This suggests that locational factors (like access to family networks, services, or land) may be more impactful than short-term price movements. The most consistent finding is that urban households have slightly higher child dependency, regardless of price.
+
+
+```{r}
+# Loading broom for glance support
+library(broom)
+
+# Comparing models with custom goodness-of-fit stats
+modelsummary(
+  list(
+    "Model 1: Price + Urban/Rural" = model_monthly,
+    "Model 2: Price × Urban Interaction" = model_interaction,
+    "Model 3: Add Family Size" = model_with_famsize
+  ),
+  gof_map = c("nobs", "r.squared", "adj.r.squared", "AIC"),
+  statistic = "std.error",
+  stars = TRUE,
+  output = "markdown"
+)
+
+
+```
+Key Takeaways from the Table:
+Intercept: All models have a statistically significant intercept, which captures the average level of child dependency for rural households when other predictors are zero. This serves as the base value for interpretation.
+
+Monthly Price:
+
+In all three models, the coefficient for rice price is very small and not statistically significant, indicating that monthly rice price fluctuations have little to no direct effect on child dependency.
+
+This supports the idea that short-term price variation may not be enough to influence family decisions about child structure — especially given the simulated month assignment due to data limitations.
+
+Urban-Rural Dummy:
+
+The urban_ruralUrban coefficient is positive and statistically significant in Models 1 and 3, and marginally significant in Model 2.
+
+This consistently suggests that urban households have higher child dependency, potentially due to urban-specific pressures (e.g., cost of living, limited support systems).
+
+Interaction Term:
+
+In Model 2, the interaction between rice price and urban location is not statistically significant, implying that price does not affect urban households differently than rural ones.
+
+This weakens the case for differential sensitivity to food price shocks based on location.
+
+Family Size:
+
+In Model 3, the famsize coefficient is highly significant and the strongest predictor in the table.
+
+Each additional household member is associated with 0.042 more children, highlighting a structural pattern: larger families tend to have more children — not surprising, but crucial in understanding dependency dynamics.
+
+Model Fit:
+
+Model 3 has a noticeably higher R² (0.009) compared to Models 1 and 2 (both 0.001).
+
+While the explained variance is still small (as expected in cross-sectional microdata), the addition of family size improves model performance, indicating that structural household characteristics matter more than price changes.
+
+🧾 Final Interpretation:
+Rice price: Not a meaningful predictor in this data.
+
+Urban status: Matters consistently — urban families are slightly more dependent on children.
+
+Household size: The most powerful explanatory variable. Larger families rely more on children, likely as part of economic coping strategies.
+
+Policy Insight: Structural and locational factors — not price shocks — seem to shape family dependency decisions. Programs should focus on urban support systems and family-level interventions, rather than short-term food price responses.
+
+
+***What This Means for Policy***
+If we aim to reduce child dependency among economically vulnerable households, our focus should extend beyond price fluctuations. This study found that monthly rice prices — even when interacted with urban-rural status — do not significantly predict changes in child dependency. This suggests that short-term price volatility is not a primary driver of household structural decisions like relying on children for support.
+
+What did matter, however, were structural and locational realities:
+
+Urban households consistently exhibited higher child dependency, even when controlling for rice price and household size. This indicates persistent, location-specific vulnerabilities — possibly linked to higher living costs, fewer support networks, or different labor dynamics.
+
+Family size emerged as the strongest predictor of child dependency. Larger households may reflect adaptive strategies — where children play an active role in caregiving, labor, or simply sharing living expenses. This underscores that household structure itself is both an outcome of economic stress and a strategy to cope with it.
+
+Given these findings, policies should prioritize:
+
+Urban-targeted support, especially for families without land or stable employment. Solutions could include food subsidies, childcare programs, or conditional cash transfers that ease the burden on families and reduce the need to depend on children.
+
+Family planning and educational outreach that empower households — particularly mothers — to make informed decisions about family size and investments in children's education.
+
+Finally, data quality matters. The inability to observe exact survey dates meant I had to simulate monthly exposure using actual market prices. While this method helped approximate real-world variation, future surveys should aim to include precise timestamps so we can more accurately assess how households respond to changing economic conditions in real time.
+
+# Conclusion
+Econometric models may not tell the whole story — they simplify complex realities into coefficients and p-values. But within those patterns lie powerful insights.
+
+This project shows that structural characteristics like family size and place of residence carry more weight than market signals when it comes to household decisions about children. These aren’t just numbers — they represent families making trade-offs, adjusting quietly to pressure, and finding ways to survive.
+
+Even with limited data, we can uncover important truths about resilience, inequality, and how policy can meet people where they are — with empathy, not just efficiency.
